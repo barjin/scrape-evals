@@ -1,8 +1,8 @@
 import os
 try:
-    from apify_client import ApifyClient  # type: ignore
+    from apify_client import ApifyClientAsync  # type: ignore
 except Exception:  # pragma: no cover - allow discovery without the dependency installed
-    ApifyClient = None  # type: ignore[assignment]
+    ApifyClientAsync = None  # type: ignore[assignment]
 from .base import Scraper, ScrapeResult
 from dotenv import load_dotenv
 import logging
@@ -18,23 +18,23 @@ class ApifyAPIScraper(Scraper):
     """
     def __init__(self):
         self.api_token = os.getenv("APIFY_API_TOKEN")
-        if ApifyClient is None:
+        if ApifyClientAsync is None:
             # Keep import-time lightweight so discovery works; fail when actually used
             raise RuntimeError("apify-client is not installed. Please `pip install apify-client`. ")
         if not self.api_token:
             raise RuntimeError("APIFY_API_TOKEN environment variable not set.")
-        self.client = ApifyClient(self.api_token)
+        self.client = ApifyClientAsync(self.api_token)
         self.actor_id = "apify/web-scraper"
 
-    def scrape(self, url: str, run_id: str) -> ScrapeResult:
+    async def scrape(self, url: str, run_id: str) -> ScrapeResult:
         error = None
         html = ""
         content_size = 0
-        status_code = 500 
+        status_code = 500
         try:
             # Start the actor and wait for it to finish
             actor_client = self.client.actor(self.actor_id)
-            run_result = actor_client.call(
+            run_result = await actor_client.call(
                 run_input={
                     "startUrls": [{"url": url}],
                     "maxRequestsPerCrawl": 1,
@@ -68,7 +68,7 @@ class ApifyAPIScraper(Scraper):
                     error = "No HTML found in Apify dataset result."
         except Exception as e:
             error = str(e)
-        
+
         return ScrapeResult(
             run_id=run_id,
             scraper="apify_api",
@@ -79,4 +79,4 @@ class ApifyAPIScraper(Scraper):
             format="html",
             created_at=datetime.now().isoformat(),
             content=html,
-        ) 
+        )
