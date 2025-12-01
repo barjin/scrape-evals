@@ -59,7 +59,7 @@ class ApifyAPIScraper(Scraper):
             else:
                 dataset_id = run_result["defaultDatasetId"]
                 dataset_client = self.client.dataset(dataset_id)
-                items = dataset_client.list_items().items
+                items = (await dataset_client.list_items()).items
                 if items and "html" in items[0]:
                     html = items[0]["html"] or ""
                     status_code = items[0].get("status_code")
